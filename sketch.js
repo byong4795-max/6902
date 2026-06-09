@@ -19,6 +19,7 @@ let countdownNum = 3;
 let lastDetectedDir = -1; // 記錄最後偵測到的方向用於視覺回饋
 let zaemonTimer = 0; // 用於掛號費畫面的計時
 let zaemonCallback = null;
+let desktopPeerId = null; // 新增：用於儲存電腦端的 Peer ID
 
 // 顏色常數定義
 const C_BLUE = [65, 105, 225]; 
@@ -63,7 +64,7 @@ function setup() {
     peer = new Peer(undefined, peerOptions);
     peer.on('open', id => {
       myId = id;
-      if (typeof updateQRCode === 'function') updateQRCode(id);
+      desktopPeerId = id; // 儲存電腦端的 Peer ID
     });
     peer.on('call', call => {
       call.answer();
@@ -112,12 +113,12 @@ function draw() {
   // 在角落顯示小地圖式的視訊預覽（鏡像）
   if (video) {
     push();
-    translate(170, 10);
+    translate(170, 10); // 保持 top-right corner 的位置
     scale(-1, 1);
-    image(video, -160, 0, 160, 120);
+    image(video, -320, 0, 320, 240); // 寬度 160 -> 320, 高度 120 -> 240
     noFill();
     stroke(C_BLUE);
-    rect(-160, 0, 160, 120);
+    rect(-320, 0, 320, 240); // 寬度 160 -> 320, 高度 120 -> 240
     pop();
     drawHandMarkers();
   }
@@ -226,8 +227,20 @@ function drawCoverScreen() {
 function drawQRWaitScreen() {
   fill(C_BLUE);
   textSize(24);
-  text("請使用手機掃描下方 QRcode 以連接鏡頭", width/2, 100);
-  // 當偵測到視訊物件寬度大於0且 Handpose 已啟動，代表連線成功
+  text("請使用手機連接至此電腦", width/2, 100);
+
+  if (desktopPeerId) {
+    textSize(20);
+    text("請在手機瀏覽器輸入網址:", width/2, 150);
+    text(`[你的網址]?room=${desktopPeerId}`, width/2, 180);
+    text("或手動輸入此 ID: " + desktopPeerId, width/2, 230);
+    // 如果您有 QR code 產生器，可以在這裡呼叫它來顯示 QR code
+    // 例如：generateQRCode(desktopPeerId, width/2, 280);
+  } else {
+    text("正在獲取 Peer ID...", width/2, 150);
+  }
+
+  // 當偵測到視訊物件寬度大於0，代表連線成功
   if (video && video.width > 0) {
     // 偵測到有影像或連線，準備進入介紹
     pendingLevel = "L1";
